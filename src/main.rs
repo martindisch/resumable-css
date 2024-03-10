@@ -78,8 +78,35 @@ impl BlockType {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn complete() {
-        assert!(true);
+    fn complete_css() {
+        let css = r#"
+.foo {
+  .fancy {
+    color: blue;
+  }
+
+  &:hover {
+    color: orange;
+  }
+}
+
+body {
+  color: green;
+}
+"#;
+
+        let mut input = ParserInput::new(css);
+        let mut parser = Parser::new(&mut input);
+
+        let tokens = parse(&mut parser).unwrap();
+        let css = tokens.iter().map(|t| t.to_css_string()).collect::<String>();
+
+        assert_eq!(
+            ".foo{.fancy{color:blue;}&:hover{color:orange;}}body{color:green;}",
+            css
+        );
     }
 }
