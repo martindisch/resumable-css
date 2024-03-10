@@ -100,6 +100,84 @@ body {
     }
 
     #[test]
+    fn flat_partial() {
+        let partial_1 = r#"
+.foo {
+  .fancy {
+    color: blue;
+"#;
+        let partial_2 = r#"
+  }
+}
+
+body {
+  color: green;
+}
+"#;
+
+        let mut input = ParserInput::new(partial_1);
+        let mut parser = Parser::new(&mut input);
+        let tokens = parse_flat(&mut parser).unwrap();
+        // Because it doesn't descend, it doesn't mind unclosed blocks
+        assert_eq!(
+            [
+                Token::Delim('.'),
+                Token::Ident("foo".into()),
+                Token::CurlyBracketBlock
+            ],
+            &tokens[..]
+        );
+
+        let mut input = ParserInput::new(partial_2);
+        let mut parser = Parser::new(&mut input);
+        let tokens = parse_flat(&mut parser).unwrap();
+        // Here the closing tokens appear, but that's considered an error based
+        // on the intended behavior (closing tokens are usually swallowed)
+        assert_eq!(
+            [
+                Token::CloseCurlyBracket,
+                Token::CloseCurlyBracket,
+                Token::Ident("body".into()),
+                Token::CurlyBracketBlock
+            ],
+            &tokens[..]
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn flat_resumed() {
+        let partial_1 = r#"
+.foo {
+  .fancy {
+    color: blue;
+"#;
+        let partial_2 = r#"
+  }
+}
+
+body {
+  color: green;
+}
+"#;
+
+        let mut input = ParserInput::new(partial_1);
+        let mut parser = Parser::new(&mut input);
+        parse_flat(&mut parser).unwrap();
+        let state = parser.state();
+
+        let mut input = ParserInput::new(partial_2);
+        // We can't change the input of a parser, so we create a new instance
+        // even though that's wrong
+        let mut parser = Parser::new(&mut input);
+        parser.reset(&state);
+
+        // This panics at a char boundary because we restored state for a
+        // different parser/input
+        parse_flat(&mut parser).unwrap();
+    }
+
+    #[test]
     fn nested_complete() {
         let css = r#"
 .foo {
