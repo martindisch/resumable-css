@@ -1,27 +1,6 @@
-use cssparser::{ParseError, Parser, ParserInput, ToCss, Token};
+use cssparser::{ParseError, Parser, Token};
 
-fn main() {
-    println!("This is a tests-only project, run `cargo test`.");
-
-    let partial = r#"
-.foo {
-  .fancy {
-    /* hello .world { color: red; } */
-    color: blue;
-"#;
-
-    let mut input = ParserInput::new(partial);
-    let mut parser = Parser::new(&mut input);
-
-    let tokens = parse(&mut parser).expect("Parser failed");
-
-    println!("{tokens:#?}");
-
-    let css = tokens.iter().map(|t| t.to_css_string()).collect::<String>();
-    println!("{css}");
-}
-
-fn parse<'i>(input: &mut Parser<'i, '_>) -> Result<Vec<Token<'i>>, ParseError<'i, ()>> {
+pub fn parse<'i>(input: &mut Parser<'i, '_>) -> Result<Vec<Token<'i>>, ParseError<'i, ()>> {
     let mut tokens = Vec::new();
 
     while let Ok(token) = input.next() {
@@ -69,6 +48,8 @@ impl BlockType {
 
 #[cfg(test)]
 mod tests {
+    use cssparser::{ParserInput, ToCss};
+
     use super::*;
 
     #[test]
