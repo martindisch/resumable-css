@@ -3,23 +3,14 @@ use cssparser::{ParseError, Parser, ParserInput, ToCss, Token};
 fn main() {
     println!("This is a tests-only project, run `cargo test`.");
 
-    let css = r#"
+    let partial = r#"
 .foo {
   .fancy {
+    /* hello .world { color: red; } */
     color: blue;
-  }
-
-  &:hover {
-    color: orange;
-  }
-}
-
-body {
-  color: green;
-}
 "#;
 
-    let mut input = ParserInput::new(css);
+    let mut input = ParserInput::new(partial);
     let mut parser = Parser::new(&mut input);
 
     let tokens = parse(&mut parser).expect("Parser failed");
@@ -81,7 +72,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn complete_css() {
+    fn complete() {
         let css = r#"
 .foo {
   .fancy {
@@ -108,5 +99,25 @@ body {
             ".foo{.fancy{color:blue;}&:hover{color:orange;}}body{color:green;}",
             css
         );
+    }
+
+    #[test]
+    fn partial() {
+        let partial = r#"
+.foo {
+  .fancy {
+    /* hello .world { color: red; } */
+    color: blue;
+"#;
+
+        let mut input = ParserInput::new(partial);
+        let mut parser = Parser::new(&mut input);
+
+        let tokens = parse(&mut parser).unwrap();
+        let css = tokens.iter().map(|t| t.to_css_string()).collect::<String>();
+
+        // This may be a bit surprising: the parser adds closing tokens to make
+        // partial CSS valid
+        assert_eq!(".foo{.fancy{color:blue;}}", css);
     }
 }
